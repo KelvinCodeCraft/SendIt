@@ -1,4 +1,6 @@
-CREATE TABLE PARCEL (sender VARCHAR(200),
+CREATE TABLE PARCEL 
+       (
+		sender VARCHAR(200),
 		senderLocation VARCHAR(200), 
 		parcelWeight INT,
 		price INT,
@@ -10,4 +12,5 @@ CREATE TABLE PARCEL (sender VARCHAR(200),
 		status VARCHAR(200) DEFAULT 'In Transit',
 		isArrived VARCHAR(200) DEFAULT 'no',
 		isDelivered VARCHAR(200) DEFAULT 'no',
-		isDeleted BIT DEFAULT 0)
+		isDeleted BIT DEFAULT 0
+		)

@@ -8,7 +8,7 @@ let Emailconfig ={
     service:'gmail',
     port:587,
     auth:{
-        user:'onesmus1024@gmail.com',
+        user:'koechkelvin2001@gmail.com',
         pass:'ffqhhjsgezbxylyp'
     }
 }

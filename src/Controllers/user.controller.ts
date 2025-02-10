@@ -6,9 +6,9 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import path from 'path';
 import db from '../Databasehelper/db-connection';
-
+ 
 dotenv.config({path:path.resolve(__dirname,'../../.env')})
-
+ 
 interface ExtendedRequest extends Request {
     body: {
         email: string;
@@ -18,12 +18,12 @@ interface ExtendedRequest extends Request {
     params: {
         id: string;
     }
-
+ 
 }
-
-
+ 
+ 
 // create a user
-
+ 
 export const createUser = async (req: ExtendedRequest, res: Response) => {
     try {
         const {email, password, phone} = req.body;
@@ -39,27 +39,38 @@ export const createUser = async (req: ExtendedRequest, res: Response) => {
         // check for connection
         if (db.checkConnection() as unknown as boolean) {
             const userCreated =await db.exec('InsertOrUpdateUser',{id: user.id, email: user.email, password: user.password, phone: user.phone, is_admin: '0', is_deleted: '0', is_sent: '0', created_at: new Date().toISOString()});
-
+ 
             if (userCreated){
-                const token = jwt.sign(user, process.env.JWT_SECRET as string, { expiresIn: '1d' });
-                res.status(200).json({token});
+                
+                try {
+                    console.log("JWT_SECRET:", process.env.JWT_SECRET);
+                    const token = jwt.sign(user, process.env.JWT_SECRET as string, { expiresIn: '1d' });
+                    console.log("Generated token:", token);
+                    res.status(200).json({ token });
+                } catch (jwtError) {
+                    const error = jwtError as Error;
+                    console.error("JWT Signing Error:", error);
+                    res.status(500).json({ message: "Error generating token", error: error.message });
+                }
+                
             }else
             {
+                console.error("User creation failed, response:", userCreated);
                 res.status(500).json({message: 'Error creating user'});
             }
         } else {
             res.status(500).json({message: 'Error connecting to database'});
         }
-
+ 
        
     } catch (error) {
         res.status(500).json(error);
     }
 }
-
-
+ 
+ 
 // login a user
-
+ 
 export const loginUser = async (req: ExtendedRequest, res: Response) => {
     try {
         const {email, password} = req.body;
@@ -68,14 +79,14 @@ export const loginUser = async (req: ExtendedRequest, res: Response) => {
             if (user.length > 0) {
                 const validPassword = await bcrypt.compare(password, user[0].password);
                 
-                
-                if (validPassword) {
+                const isDeleted = user[0].is_deleted;
+                if (validPassword && isDeleted === '0') {
                     
                     const token = jwt.sign(user[0], process.env.JWT_SECRET as string, {expiresIn: '1d'});
             
                     res.status(200).json({"token": token,user : user[0]});
                 } else {
-                    res.status(500).json({message: 'Invalid password'});
+                    res.status(500).json({message: 'Invalid Credentials'});
                 }
             } else {
                 res.status(500).json({message: 'Invalid email'});
@@ -87,10 +98,10 @@ export const loginUser = async (req: ExtendedRequest, res: Response) => {
         res.status(500).json(error);
     }
 }
-
-
+ 
+ 
 // get a user
-
+ 
 export const getUserById = async (req: ExtendedRequest, res: Response) => {
     try {
         const id = req.params.id;
@@ -108,22 +119,22 @@ export const getUserById = async (req: ExtendedRequest, res: Response) => {
         res.status(500).json(error);
     }
 }
-
+ 
 // update a user
-
+ 
 export const updateUser = async (req:Request, res: Response) => {
     try {
         const id = req.params.id;
         // get user from database
         console.log("body",req.body);
-
+ 
    
         if (db.checkConnection() as unknown as boolean) {
             const userFound:UserModel[]= await db.exec('GetUserById',{id:id});
             if (userFound.length > 0) {
                 const user = {
                     id: userFound[0].id,
-                    email: req.body.email, 
+                    email: req.body.email,
                     password: req.body.password,
                     phone: req.body.phone ,
                     is_admin: req.body.is_admin,
@@ -131,10 +142,10 @@ export const updateUser = async (req:Request, res: Response) => {
                     is_sent: req.body.is_sent ,
                     created_at: userFound[0].created_at
                 }
-
+ 
                 const salt = await bcrypt.genSalt(10);
                 user.password = await bcrypt.hash(user.password, salt);
-
+ 
                 const userUpdated = await db.exec('InsertOrUpdateUser',user);
                 if (userUpdated) {
                     res.status(200).json({message: 'User updated successfully', userUpdated});
@@ -149,16 +160,16 @@ export const updateUser = async (req:Request, res: Response) => {
         res.status(500).json(error);
     }
 }
-
-
+ 
+ 
 // delete a user
-
+ 
 export const deleteUser = async (req:Request, res: Response) => {
     try {
         const id = req.params.id;
         if (db.checkConnection() as unknown as boolean) {
             const userFound:UserModel[] = await db.exec('GetUserById',{id:id});
-
+ 
             if (userFound.length > 0) {
                 const user = {
                     id: userFound[0].id,
@@ -170,7 +181,7 @@ export const deleteUser = async (req:Request, res: Response) => {
                     isSent: userFound[0].is_sent,
                     createdAt: userFound[0].created_at
                 }
-
+ 
                  await db.exec('DeleteUser',{id: user.id});
             
                 
@@ -186,10 +197,10 @@ export const deleteUser = async (req:Request, res: Response) => {
         res.status(500).json(error);
     }
 }
-
-
+ 
+ 
 // get all users
-
+ 
 export const getAllUsers = async (req:Request, res: Response) => {
     try {
         if (db.checkConnection() as unknown as boolean) {
@@ -206,3 +217,6 @@ export const getAllUsers = async (req:Request, res: Response) => {
         res.status(500).json(error);
     }
 }
+ 
+
+ 

@@ -1,4 +1,5 @@
 
+
 USE [SENDIT]
 GO
 CREATE TABLE Users (
