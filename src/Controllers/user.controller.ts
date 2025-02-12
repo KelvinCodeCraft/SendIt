@@ -81,7 +81,7 @@ export const loginUser = async (req: ExtendedRequest, res: Response) => {
                 const validPassword = await bcrypt.compare(password, user[0].password);
                 
                 const isDeleted = user[0].is_deleted;
-                if (validPassword && isDeleted === '0') {
+                if (validPassword && isDeleted == false) {
                     
                     const token = jwt.sign(user[0], process.env.JWT_SECRET as string, {expiresIn: '1d'});
             
