@@ -21,7 +21,9 @@ BEGIN
         receiverLng,
         senderLat,
         senderLng,
-        deliveryStatus,
+        deliveryStatus
     FROM dbo.PARCEL
     WHERE id = @id;
 END;
+
+

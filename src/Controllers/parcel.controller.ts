@@ -1,6 +1,7 @@
 import { Request, RequestHandler, Response } from "express";
 import { v4 as uid } from "uuid";
 import db from '../Databasehelper/db-connection';
+import mssql from "mssql";
 import { Data } from "../Interfaces/parcelInterfaces";
 import { ParcelSchema, SenderSchema } from "../helpers/parcel.validate";
 import { stat } from "fs";
@@ -87,14 +88,95 @@ export const addParcel = async (req: ExtendedRequest, res: Response): Promise<an
 
 
 
-export const getParcels: RequestHandler = async (req, res) => {
+// export const getParcels: RequestHandler = async (req, res) => {
+//   try {
+//     const result = await db.exec("getAllParcels");
+//     res.status(200).json(result);
+//   } catch (error) {
+//     res.status(404).json({ error });
+//   }
+// };
+
+export const getParcels: RequestHandler = async (
+  req: ExtendedRequest, 
+  res: Response): Promise<void> => {
   try {
-    const result = await db.exec("getAllParcels");
+    const { senderEmail, receiverEmail } = req.query;
+    let result;
+
+    // If either senderEmail or receiverEmail is provided, use the getParcelsByEmail stored procedure.
+    if ((senderEmail && typeof senderEmail === "string") || (receiverEmail && typeof receiverEmail === "string")) {
+      // Use senderEmail if available; otherwise, use receiverEmail.
+      const email = senderEmail ? senderEmail : receiverEmail;
+      // Remove any accidental quotes from the email string.
+      const cleanEmail = typeof email === "string" ? email.replace(/['"]/g, "") : "";
+      
+      result = await db.exec("getParcelsByEmail", { email: cleanEmail });
+    } else {
+      // No email filter provided, so return all parcels.
+      result = await db.exec("getAllParcels");
+    }
+
+    // Assuming your db.exec returns an object with a recordset property.
+    if (!result || result.length === 0) {
+      res.status(404).json({ message: "No parcels found" });
+    }
+
+    // Return the JSON results.
     res.status(200).json(result);
   } catch (error) {
-    res.status(404).json({ error });
+    res.status(500).json({ error });
   }
 };
+
+// export const getParcels: RequestHandler = async (
+//   req: ExtendedRequest, 
+//   res: Response
+// ):Promise<void>  => {
+//   try {
+//     const { senderEmail, receiverEmail } = req.query;
+
+//     // Check if either senderEmail or receiverEmail is provided as a string
+//     if ((senderEmail && typeof senderEmail === "string") || (receiverEmail && typeof receiverEmail === "string")) {
+//       // Determine which email to use for filtering. If both are provided, senderEmail takes priority.
+//       const filterEmail = senderEmail
+//         ? typeof senderEmail === "string" ? senderEmail.replace(/['"]/g, "") : ""
+//         : typeof receiverEmail === "string" ? receiverEmail.replace(/['"]/g, "") : "";
+
+//       // Execute inline parameterized query to filter by email
+//       const result = db.query(
+
+//         SELECT 
+//             id,
+//             senderEmail,
+//             senderName,
+//             receiverName,
+//             receiverEmail,
+//             dispatchedDate,
+//             deliveryDate,
+//             parcelWeight,
+//             price,
+//             receiverLat,
+//             receiverLng,
+//             senderLat,
+//             senderLng,
+//             deliveryStatus
+//          FROM dbo.PARCEL  WHERE senderEmail = @filterEmail OR receiverEmail = @filterEmail",
+//         { filterEmail }
+//       );
+      
+//       res.status(200).json(result);
+//     } else {
+//       // No email filter provided, so return all parcels using the stored procedure
+//       const result = await db.exec("getAllParcels");
+//       res.status(200).json(result);
+//     }
+//   } catch (error) {
+//     res.status(404).json({ error });
+//   }
+// };
+
+
 
 
 export const getParcel: RequestHandler<{ id: string }> = async (req, res) => {
@@ -113,31 +195,76 @@ export const getParcel: RequestHandler<{ id: string }> = async (req, res) => {
   }
 };
 
-// export const deleteParcel = async (req: Extended, res: Response, next: NextFunction): Promise<void> => {
-//   // your code here
-//   res.status(200).json({ message: "Parcel deleted" });
-// };
-
-export const deleteParcel: RequestHandler<{ id: string }> = async (
-  req: ExtendedRequest,
-  res: Response,
-): Promise<void> => {
+export const getParcelByEmail: RequestHandler<{email: string}> = async (
+  req: ExtendedRequest, 
+  res: Response
+):Promise<void> => {
   try {
-    const id = req.params.id;
-    const recordset = await db.exec("GetUserById", { id });
-    if (!recordset[0]) {
-      const result = await db.exec("GetUserById", { id });
-      if (!result[0]) {
-        res.status(404).json({ message: "Parcel Not Found" });
-      } else {
-        await db.exec("deleteParcel", { id });
-        res.status(200).json({ message: "Parcel Deleted" });
-      }
+    // Extract the email from query parameters
+    const email = req.query.email as string;
+
+    // Check if email is provided
+    if (!email) {
+      res.status(400).json({ message: "Email query parameter is required" });
+    }
+
+    // Execute the stored procedure 'getParcelsByEmail'
+    const result = await db.exec("getParcelsByEmail", { email });
+
+    // Check if the result returned any records
+    if (!result[0]) {
+      res.status(404).json({ message: "Parcel Not Found" });
+    } else {
+      res.status(200).json(result);
     }
   } catch (error) {
     res.status(404).json({ error });
   }
 };
+
+export const deleteParcel: RequestHandler<{ id: string }> = async (req, res): Promise<void> => {
+  try {
+    const id = req.params.id;
+    
+    // Retrieve the parcel by its id
+    const result = await db.exec("getParcelById", { id });
+    
+    // Check if the parcel exists. Adjust according to your db.exec response structure.
+    if (!result || result.length === 0) {
+      res.status(404).json({ message: "Parcel Not Found" });
+      return;
+    }
+    
+    // If the parcel exists, delete it.
+    await db.exec("deleteParcel", { id });
+    res.status(200).json({ message: "Parcel Deleted" });
+    
+  } catch (error) {
+    res.status(500).json({ error });
+  }
+};
+
+
+// export const deleteParcel: RequestHandler<{ id: string }> = async (
+//   req: ExtendedRequest,
+//   res: Response,
+// ): Promise<void> => {
+//   try {
+//     const id = req.params.id;
+//     const recordset = await db.exec("getParcelById", { id });
+//     if (!recordset[0]) {
+//       const result = await db.exec("getParcelById", { id });
+//       if (!result[0]) {
+//         res.status(404).json({ message: "Parcel Not Found" });
+//       } else {
+//         await db.exec("deleteParcel", { id });
+//         res.status(200).json({ message: "Parcel Deleted" });
+//       }
+//     }
+//   } catch (error) {
+//     res.status(404).json({ error });
+//   }
+// };
 
 
 export const updateParcel: RequestHandler<{ id: string }> = async (
@@ -179,9 +306,9 @@ export const updateParcel: RequestHandler<{ id: string }> = async (
     if (error) {
       res.json({ error: error.details[0].message });
     }
-    const recordset = await db.exec("getParcel", { id });
+    const recordset = await db.exec("getParcelById", { id });
     if (!recordset[0]) {
-      const result = await db.exec("getParcel", { id });
+      const result = await db.exec("getParcelById", { id });
       if (!result[0]) {
         res.status(404).json({ message: "Parcel Not Found" });
       } else {
@@ -208,6 +335,7 @@ export const updateParcel: RequestHandler<{ id: string }> = async (
     res.status(404).json({ error });
   }
 };
+
 export const deliverParcel: RequestHandler<{ id: string }> = async (
   req,
   res

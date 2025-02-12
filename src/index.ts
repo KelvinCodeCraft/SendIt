@@ -8,7 +8,6 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 import router from './Routers/user.router';
 import routerp from './Routers/parcel.router'
 
-import cron from 'node-cron'
 const PORT = process.env.PORT || 4000;
 const app: Express = express();
 app.use(express.json());
@@ -29,10 +28,3 @@ app.get('/', (req, res) => {
     res.send('Hello!');   
 });
 
-
-
-
-// cron.schedule('*/10 * * * * *', async() => {
-//     console.log('running a task every 10 Second');
-//     await sendWelcomeEmail()
-//   });

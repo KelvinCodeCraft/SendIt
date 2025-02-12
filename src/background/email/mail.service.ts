@@ -18,7 +18,7 @@ interface User {
 }
 const sendWelcomeEmail = async () => {
     const pool = await mssql.connect(DBconfig)
-    const users: User[] = await (await pool.request().
+    const users: User[] = (await pool.request().
         query("SELECT * FROM Users WHERE is_sent ='0'")).recordset
 
     for (let user of users) {
