@@ -179,19 +179,20 @@ export const getParcels: RequestHandler = async (
 
 
 
-export const getParcel: RequestHandler<{ id: string }> = async (req, res) => {
+export const getParcel: RequestHandler<{ id: string }> = async (req: ExtendedRequest,
+  res: Response,
+): Promise<any> => {
   try {
     const id = req.params.id;
     const result = await db.exec("getParcelById", { id });
-    // const recordset = result.recordset;
+
     if (!result[0]) {
-      res.json({ message: "Parcel Not Found" });
-    } else {
-      res.status(200).json(result);
+      return res.status(404).json({ message: "Parcel Not Found" });
     }
-    res.status(400).json({ message: "Parcel Not Found!" });
+
+    return res.status(200).json(result);
   } catch (error) {
-    res.status(404).json({ error });
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
