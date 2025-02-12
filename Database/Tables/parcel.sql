@@ -1,16 +1,23 @@
-CREATE TABLE PARCEL 
-       (
-		sender VARCHAR(200),
-		senderLocation VARCHAR(200), 
-		parcelWeight INT,
-		price INT,
-		parcelDescription VARCHAR(200),
-		receiverLocation VARCHAR(200),
-		receiverPhone VARCHAR(200),
-		receiverEmail VARCHAR(200),
-		deliveryDate VARCHAR(200),
-		status VARCHAR(200) DEFAULT 'In Transit',
-		isArrived VARCHAR(200) DEFAULT 'no',
-		isDelivered VARCHAR(200) DEFAULT 'no',
-		isDeleted BIT DEFAULT 0
-		)
+
+USE [SENDIT]
+GO
+
+CREATE TABLE PARCEL (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID() NOT NULL,
+    senderEmail VARCHAR(200) NOT NULL,
+    senderName VARCHAR(200) NOT NULL, 
+    receiverName VARCHAR(200) NOT NULL,
+    receiverEmail VARCHAR(200) NOT NULL,
+    dispatchedDate DATE NOT NULL,
+    deliveryDate DATE NOT NULL,
+    parcelWeight INT NOT NULL,
+    price INT NOT NULL,
+    receiverLat VARCHAR(200) NOT NULL,
+    receiverLng VARCHAR(200) NOT NULL,
+    senderLat VARCHAR(200) NOT NULL,
+    senderLng VARCHAR(200) NOT NULL,
+	deliveryStatus VARCHAR(200) NOT NULL
+);
+
+
+

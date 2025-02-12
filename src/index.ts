@@ -6,6 +6,7 @@ import sendWelcomeEmail from './background/email/mail.service';
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 import router from './Routers/user.router';
+import routerp from './Routers/parcel.router'
 
 import cron from 'node-cron'
 const PORT = process.env.PORT || 4000;
@@ -15,6 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 app.use('/api/users', router);
+app.use('/parcel', routerp)
 
 
 app.listen(PORT, () => {

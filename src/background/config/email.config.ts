@@ -9,7 +9,7 @@ let Emailconfig ={
     port:587,
     auth:{
         user:'koechkelvin2001@gmail.com',
-        pass:'ffqhhjsgezbxylyp'
+        pass:'eejnubwedrgflzyz'
     }
 }
 
